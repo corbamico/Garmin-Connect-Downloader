@@ -30,13 +30,6 @@ Thanks to :
 + gcpuploader : ( http://sourceforge.net/projects/gcpuploader/ )
   - Auto upload "FIT/TCX" on http:// connect.garmin.com
 
- 
-TODO :
---------
-- crypt password login
-- Manual
-- Learn 'Bash' ;O)
-
 
 --------
 - GitHub : https://github.com/corbamico/Garmin-Connect-Downloader
