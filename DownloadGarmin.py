@@ -45,33 +45,103 @@ Handle the operation to download to the Garmin Connect Website.
 # 'ctx' as 'tcx'. Corrected URI in original 'upload_tcx' function, adding the file
 # type extension to the URI.
 #
+import operator
+import time
 import os.path
+
+from pytz import timezone
+import pytz
+
+import UploadGarmin
+
 try:
     import simplejson
 except ImportError:
     import json as simplejson
-import UploadGarmin
+    
+
+from datetime import datetime
+
 
 workout_url = "http://connect.garmin.com/proxy/activity-search-service-1.2/json/activities?activityType=running"
+page_url    = "http://connect.garmin.com/proxy/activity-search-service-1.2/json/activities?activityType=running&currentPage=%d"
+tcx_url     = "http://connect.garmin.com/proxy/activity-service-1.2/tcx/activity/%d?full=true"
+
+
+def generate_file_name(activityid,time,tzinfo):
+	runtime = string_to_datetime(time).astimezone(timezone(tzinfo)).strftime("%Y%m%d%H%M")
+	return "%s-%d.tcx" %(runtime,activityid) 
+
+	
+def string_to_datetime(string, time_format="%Y-%m-%dT%H:%M:%S.000Z"):
+	#function to convert string to datetime
+	#2014-01-09T21:31:40.000Z
+	return datetime.strptime(string, time_format).replace(tzinfo=pytz.utc)
+		
+	
 
 class DownloadGarmin(UploadGarmin.UploadGarmin):
-#	def __init__(self):
-#		super.__init__(self)
-	
+
+	def get_current_page(self,currentPage):
+		print "Page %d Downloading " %currentPage
+
+		output = self.opener.open( page_url % currentPage)
+		if output.code != 200:
+			raise Exception("Error while downloading current page %d" %currentPage)
+		json = output.read()
+		output.close()	
+		
+		activities = simplejson.loads(json)["results"]["activities"]	
+		
+		return map(lambda activity:\
+						  (activity["activity"]["activityId"],\
+						  activity["activity"]["activitySummary"]["BeginTimestamp"]["value"],
+						  activity["activity"]["activityTimeZone"]["key"]),\
+						  activities)
+						  
+						  	
 	def get_workouts(self):
 		output = self.opener.open(workout_url)
 		if output.code != 200:
 			raise Exception("Error while downloading")
 		json = output.read()
 		output.close()
-		activity = simplejson.loads(json)["results"]["activities"][0]
-		return {activity["activity"]["activityId"],activity["activity"]["activitySummary"]["BeginTimestamp"]["value"]}
-	
-	
+		
+		results = simplejson.loads(json)["results"]
+		
+		activities  = results["activities"]
+		totalFound  = results["totalFound"]
+		currentPage = results["currentPage"]
+		totalPages  = results["totalPages"]
+		
+		print "Activities %d ,Pages %d found" % (totalFound , totalPages)
+		
+		#Todo: Not so good, get first page twice,
+		return reduce(operator.add, map(self.get_current_page,range(1,totalPages+1)))
+
+		
+	"""
+	sample record as (427349739, u'2014-01-09T21:31:40.000Z', u'Asia/Hong_Kong')
+	"""
+	def download_activity(self,activityid,time,tzinfo,directory="./"):
+		filename = generate_file_name(activityid,time,tzinfo)		
+		filer = open(os.path.join(directory,filename),"w")
+		
+		print "Downloading activity(%d) into file(%s)" %(activityid,filename)
+		
+		output = self.opener.open(tcx_url % activityid)
+		if output.code != 200:
+			raise Exception("Error while downloading activity")
+		
+		filer.write(output.read())
+		filer.close()
+				
+		
 if __name__ == '__main__':
     g = DownloadGarmin()
-    g.login("user", "name")
-    print g.get_workouts()
+    g.login("user", "pass")
+    for activityid,time,tzinfo in g.get_workouts():
+		g.download_activity(activityid,time,tzinfo,"./workouts")
 
 
 """
@@ -85,7 +155,5 @@ def string_to_datetime(string, time_format="%Y-%m-%d %H:%M:%S"):
     return datetime.fromtimestamp(
         time.mktime(time.strptime(string, time_format))
     )
-
-
 
 """
