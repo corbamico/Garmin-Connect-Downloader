@@ -83,7 +83,7 @@ def string_to_datetime(string, time_format="%Y-%m-%dT%H:%M:%S.000Z"):
 class DownloadGarmin(UploadGarmin.UploadGarmin):
 
 	def get_current_page(self,currentPage):
-		print "Page %d Downloading " %currentPage
+		#print "[DownloadGarmin] Page %d Downloading " %currentPage
 
 		output = self.opener.open( page_url % currentPage)
 		if output.code != 200:
@@ -110,14 +110,14 @@ class DownloadGarmin(UploadGarmin.UploadGarmin):
 		results = simplejson.loads(json)["results"]
 		
 		activities  = results["activities"]
-		totalFound  = results["totalFound"]
-		currentPage = results["currentPage"]
-		totalPages  = results["totalPages"]
+		self.totalFound  = results["totalFound"]
+		self.currentPage = results["currentPage"]
+		self.totalPages  = results["totalPages"]
 		
-		print "Activities %d ,Pages %d found" % (totalFound , totalPages)
+		#print "[DownloadGarmin] Activities %d ,Pages %d found" % (totalFound , totalPages)
 		
 		#Todo: Not so good, get first page twice,
-		return reduce(operator.add, map(self.get_current_page,range(1,totalPages+1)))
+		return reduce(operator.add, map(self.get_current_page,range(1,self.totalPages+1)))
 
 		
 	"""
@@ -127,7 +127,7 @@ class DownloadGarmin(UploadGarmin.UploadGarmin):
 		filename = generate_file_name(activityid,time,tzinfo)		
 		filer = open(os.path.join(directory,filename),"w")
 		
-		print "Downloading activity(%d) into file(%s)" %(activityid,filename)
+		#print "[DownloadGarmin] Downloading file(%s)" %filename
 		
 		output = self.opener.open(tcx_url % activityid)
 		if output.code != 200:
@@ -143,17 +143,3 @@ if __name__ == '__main__':
     for activityid,time,tzinfo in g.get_workouts():
 		g.download_activity(activityid,time,tzinfo,"./workouts")
 
-
-"""
-referennce:
-
-import time
-from datetime import datetime
-
-def string_to_datetime(string, time_format="%Y-%m-%d %H:%M:%S"):
-    #function to convert string to datetime
-    return datetime.fromtimestamp(
-        time.mktime(time.strptime(string, time_format))
-    )
-
-"""
