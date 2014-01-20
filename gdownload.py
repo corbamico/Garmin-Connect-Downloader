@@ -47,6 +47,7 @@
 # Make sure you have MultipartPostHandler.py in your path as well
 import DownloadGarmin
 import argparse
+import os
 import os.path
 import ConfigParser
 import logging
@@ -54,6 +55,7 @@ import platform
 import string
 import sys
 
+out_directory = "./workouts"
 
 parser= argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -161,7 +163,12 @@ if yes != "Y" and yes != 'y' :
 def print_screen_line(string):
 	sys.stderr.write("\r")
 	sys.stderr.write(string)
-	
+
+# Check directory of output
+if os.path.isdir(out_directory):
+	pass
+else:
+	os.mkdir(out_directory)	
 	
 logging.debug('Username: ' + username)
 logging.debug('Password: ' + obscurePassword(password))
@@ -177,14 +184,14 @@ if not g.login(username, password):
     exit(1)
 else:
 	logging.info('Login Successful.')
-	print_screen_line ("[Download Garmin]login OK.")
+	print_screen_line ("[Download Garmin]login OK.\n")
 
 # Download All
 counter = 0;
-print "\r[Download Garmin]try to get all activities id."
+print_screen_line ("[Download Garmin]try to get all activities id.")
 for activityid,time,tzinfo in g.get_workouts():
 	counter += 1
-	print_screen_line ("[Download Garmin]downloading file: (%d) total(%d)." %(counter, g.totalFound))
-	g.download_activity(activityid,time,tzinfo,"./workouts")
+	print_screen_line ("[Download Garmin]downloading file:(%d) total(%d)." %(counter, g.totalFound))
+	g.download_activity(activityid,time,tzinfo,out_directory)
 
 exit()
