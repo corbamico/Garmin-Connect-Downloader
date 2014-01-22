@@ -7,7 +7,7 @@ setup(
     version = "0.1.1",
     author = "corbamico",
     author_email = "corbamico@163.com",
-    description = "Tools for download activities from Garmin Connect.",
+    description = "Download all your running activities from Garmin Connect.",
     url = "http://github.com/corbamico/Garmin-Connect-Downloader",
     license = "GPL",
     keywords = "Garmin Connect",
